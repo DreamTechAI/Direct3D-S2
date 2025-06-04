@@ -61,7 +61,8 @@ from direct3d_s2.pipeline import Direct3DS2Pipeline
 pipeline = Direct3DS2Pipeline.from_pretrained(
   'wushuang98/Direct3D-S2', 
   subfolder="direct3d-s2-v-1-1"
-).to("cuda:0")
+)
+pipeline.to("cuda:0")
 
 mesh = pipeline(
   'assets/test/13.png', 
