@@ -179,12 +179,12 @@ __device__ void updateUDF(Triangle t, int* udf, const int DIM, const float thres
                 Point3D queryPoint = {(float)i/(DIM-1) - 0.5, (float)j/(DIM-1) - 0.5, (float)k/(DIM-1) -0.5};
                 float distance = pointToTriangleDistance(queryPoint, t.v0, t.v1, t.v2);
                 float distance2 = pointToTriangleDistance(queryPoint, t.v0, t.v1, t.v2, true);
-	        if (distance < threshold / DIM or  distance2 < threshold / DIM){
-		//distance = distance2;
-		     int int_dist = (int)(distance * 10000000);
-                     atomicMin(&udf[idx], int_dist);
-		}
-	    }
+                if (distance < threshold / DIM || distance2 < threshold / DIM){
+                //distance = distance2;
+                    int int_dist = (int)(distance * 10000000);
+                    atomicMin(&udf[idx], int_dist);
+                }
+            }
     
         }
     }
@@ -211,4 +211,3 @@ void compute_valid_udf_cuda(float* vertices, int* faces, int* udf, int numTriang
     // Launch the kernel
     compute_udf_kernel<<<gridSize, blockSize>>>(vertices, faces, udf, numTriangles, DIM, threshold);
 }
-
