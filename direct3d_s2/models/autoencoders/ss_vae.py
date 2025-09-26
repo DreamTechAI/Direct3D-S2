@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import numpy as np
+import scipy.ndimage as ndi
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -118,8 +120,27 @@ class SparseSDFVAE(nn.Module):
             sparse_sdf_i, sparse_index_i = sparse_sdf[idx].squeeze(-1).cpu(),  sparse_index[idx][..., 1:].detach().cpu()
             sdf = torch.ones((voxel_resolution, voxel_resolution, voxel_resolution))
             sdf[sparse_index_i[..., 0], sparse_index_i[..., 1], sparse_index_i[..., 2]] = sparse_sdf_i
+
+            # ---------------------------------------------------------------- #
+            #   Fix default SDF value for _interior_ voxels via flood-fill.    #
+            #   The default for interior voxels should be -1 (not +1).         #
+            # ---------------------------------------------------------------- #
+
+            active_mask = torch.zeros((voxel_resolution, voxel_resolution, voxel_resolution), dtype=torch.bool)
+            active_mask[sparse_index_i[..., 0], sparse_index_i[..., 1], sparse_index_i[..., 2]] = 1
+
+            sdf = sdf.numpy()
+            active_mask = active_mask.numpy()
+
+            # Flood‑fill from object boundary to find interior.
+            # Use active voxels to define the object boundary.
+            interior_mask = ndi.binary_fill_holes(active_mask)
+
+            # Set inactive voxels to -1 if they are interior
+            sdf[interior_mask & (~active_mask)] = -1.0
+
             vertices, faces, _, _ = measure.marching_cubes(
-                sdf.numpy(),
+                sdf,
                 mc_threshold,
                 method="lewiner",
             )
